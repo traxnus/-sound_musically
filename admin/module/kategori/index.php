@@ -1,3 +1,29 @@
+<?php
+// Sesuaikan dengan konfigurasi koneksi database Anda
+include 'config.php';
+
+// Query untuk mengambil data dari tabel penyewa, sewa, dan barang
+$sql_sewa = "SELECT penyewa.nama AS nama_penyewa, penyewa.alamat, barang.nama_barang, sewa.jumlah, sewa.lama_sewa, sewa.created_at
+             FROM penyewa
+             JOIN sewa ON penyewa.id_penyewa = sewa.id_penyewa
+             JOIN barang ON sewa.kode_barang = barang.kode_barang
+             ORDER BY sewa.created_at DESC";
+
+try {
+    // Persiapkan statement SQL
+    $stmt_sewa = $config->prepare($sql_sewa);
+    
+    // Eksekusi statement
+    $stmt_sewa->execute();
+    
+    // Ambil hasil query dalam bentuk array asosiatif
+    $hasil_sewa = $stmt_sewa->fetchAll(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    // Tangkap kesalahan jika query gagal
+    echo "Error: " . $e->getMessage();
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -53,21 +79,11 @@
                                 <th>Jumlah</th>
                                 <th>Lama Sewa (Hari)</th>
                                 <th>Tanggal Input</th>
-                                <th>Aksi</th>
+                             
                             </tr>
                         </thead>
                         <tbody>
                             <?php 
-                            // Ambil data penyewaan dari database
-                            $sql_sewa = "SELECT penyewa.nama AS nama_penyewa, penyewa.alamat, barang.nama_barang, sewa.jumlah, sewa.lama_sewa, sewa.tgl_input
-                                         FROM penyewa
-                                         JOIN sewa ON penyewa.id_penyewa = sewa.id_penyewa
-                                         JOIN barang ON sewa.kode_barang = barang.kode_barang
-                                         ORDER BY sewa.tgl_input DESC";
-                            $stmt_sewa = $config->prepare($sql_sewa);
-                            $stmt_sewa->execute();
-                            $hasil_sewa = $stmt_sewa->fetchAll(PDO::FETCH_ASSOC);
-                            
                             $no = 1;
                             foreach($hasil_sewa as $data_sewa){
                             ?>
@@ -78,15 +94,10 @@
                                 <td><?php echo $data_sewa['nama_barang'];?></td>
                                 <td><?php echo $data_sewa['jumlah'];?></td>
                                 <td><?php echo $data_sewa['lama_sewa'];?></td>
-                                <td><?php echo $data_sewa['tgl_input'];?></td>
-                                <td>
-                                    <!-- Tambahkan tombol edit dan hapus sesuai kebutuhan -->
-                                    <!-- Contoh tombol edit -->
-                                    <!-- <a href="edit.php?id=<?php echo $data_sewa['id'];?>"><button class="btn btn-warning">Edit</button></a> -->
-                                    
-                                    <!-- Contoh tombol hapus dengan konfirmasi menggunakan JavaScript -->
-                                    <!-- <a href="hapus.php?id=<?php echo $data_sewa['id'];?>" onclick="return confirm('Apakah Anda yakin ingin menghapus data ini?');"><button class="btn btn-danger">Hapus</button></a> -->
-                                </td>
+                                <td><?php echo $data_sewa['created_at'];?></td>
+   
+
+                                
                             </tr>
                             <?php 
                                 $no++;

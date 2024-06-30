@@ -23,10 +23,9 @@ CREATE TABLE `barang` (
   `merk` varchar(255) NOT NULL,
   `biaya_sewa` varchar(255) NOT NULL,
   `stok` text NOT NULL,
-  `tgl_sewa` varchar(255) NOT NULL,
-  `tgl_selesai` varchar(255) DEFAULT NULL,
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
+    INDEX idx_kode_barang (kode_barang),
+  PRIMARY KEY (`kode`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*Data for the table `barang` */
 
@@ -138,6 +137,19 @@ CREATE TABLE `toko` (
 
 insert  into `toko`(`id_toko`,`nama_toko`,`alamat_toko`,`tlp`,`nama_pemilik`) values 
 (1,'CV Daruttaqwa','Ujung Harapan','081234567890','Fauzan Falah');
+
+DROP TABLE IF EXISTS `sewa`;
+
+CREATE TABLE sewa (
+    id_sewa INT AUTO_INCREMENT PRIMARY KEY,
+    id_penyewa INT NOT NULL,
+    kode_barang INT NOT NULL,
+    jumlah INT NOT NULL,
+    lama_sewa INT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (kode_barang) REFERENCES barang(kode_barang) ON DELETE CASCADE,
+    FOREIGN KEY (id_penyewa) REFERENCES penyewa(id_penyewa) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=latin1 COLLATE=latin1_swedish_ci;
 
 /*!40101 SET SQL_MODE=@OLD_SQL_MODE */;
 /*!40014 SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS */;

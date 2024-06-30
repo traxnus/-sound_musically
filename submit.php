@@ -1,42 +1,59 @@
 <?php
-date_default_timezone_set("Asia/Jakarta");
-error_reporting(0);
+include 'config.php'; // Sertakan file koneksi database
 
-// sesuaikan dengan server anda
-$servername = 'localhost'; // host server
-$username = 'root';  // username server
-$password = ''; // password server, kalau pakai xampp kosongin saja
-$dbname = 'db_toko'; // nama database anda
+$total_harga = 0; // Variabel untuk menyimpan total harga, diinisialisasi dengan 0
 
-// Membuat koneksi
-$conn = new mysqli($servername, $username, $password, $dbname);
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    $nama = $_POST['nama'];
+    $alamat = $_POST['alamat'];
+    $barang = $_POST['barang'];
+    $jumlah_barang = $_POST['jumlah_barang'];
+    $lama_sewa = $_POST['lama_sewa'];
+    $harga_sewa_per_hari = $_POST['harga_sewa_per_hari']; // Tambahkan input untuk harga sewa per hari
 
-// Mengecek koneksi
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+    // Mulai transaksi
+    $config->beginTransaction();
+
+    try {
+        // Masukkan data penyewa ke dalam tabel penyewa
+        $sql_penyewa = "INSERT INTO penyewa (nama, alamat) VALUES (:nama, :alamat)";
+        $stmt_penyewa = $config->prepare($sql_penyewa);
+        $stmt_penyewa->execute([':nama' => $nama, ':alamat' => $alamat]);
+
+        // Dapatkan ID penyewa terakhir
+        $id_penyewa = $config->lastInsertId();
+
+        // Masukkan data penyewaan barang
+        foreach ($barang as $index => $kode_barang) {
+            $jumlah = $jumlah_barang[$index];
+
+            // Kurangi stok barang
+            $sql_update_stok = "UPDATE barang SET stok = stok - :jumlah WHERE kode_barang = :kode_barang";
+            $stmt_update_stok = $config->prepare($sql_update_stok);
+            $stmt_update_stok->execute([':jumlah' => $jumlah, ':kode_barang' => $kode_barang]);
+
+            // Hitung harga sewa untuk barang ini
+            $harga_sewa_barang = $harga_sewa_per_hari * $jumlah * $lama_sewa;
+
+            // Tambahkan harga sewa barang ini ke total harga
+            $total_harga += $harga_sewa_barang;
+
+            // Masukkan data penyewaan ke dalam tabel sewa
+            $sql_sewa = "INSERT INTO sewa (id_penyewa, kode_barang, jumlah, lama_sewa, harga_sewa) VALUES (:id_penyewa, :kode_barang, :jumlah, :lama_sewa, :harga_sewa)";
+            $stmt_sewa = $config->prepare($sql_sewa);
+            $stmt_sewa->execute([':id_penyewa' => $id_penyewa, ':kode_barang' => $kode_barang, ':jumlah' => $jumlah, ':lama_sewa' => $lama_sewa, ':harga_sewa' => $harga_sewa_barang]);
+        }
+
+        // Commit transaksi
+        $config->commit();
+
+        // Kirim total harga sebagai respons
+        echo $total_harga;
+    } catch (Exception $e) {
+        // Rollback transaksi jika terjadi kesalahan
+        $config->rollBack();
+        echo "Transaksi gagal: " . $e->getMessage();
+    }
 }
 
-// Mengambil data dari form
-$kode_barang = $_POST['kode_barang'];
-$kode_kategori = $_POST['Kode_Kategori'];
-$nama_barang = $_POST['nama_barang'];
-$merk = $_POST['merk'];
-$biaya_sewa = $_POST['biaya_sewa'];
-$stok = $_POST['stok'];
-$tgl_sewa = $_POST['tgl_sewa'];
-$tgl_selesai = $_POST['tgl_selesai'];
-
-// SQL untuk memasukkan data ke tabel barang
-$sql = "INSERT INTO barang (kode_barang, kode_kategori, nama_barang, merk, biaya_sewa, stok, tgl_sewa, tgl_selesai) 
-VALUES ('$kode_barang', '$kode_kategori', '$nama_barang', '$merk', '$biaya_sewa', '$stok', '$tgl_sewa', '$tgl_selesai')";
-
-if ($conn->query($sql) === TRUE) {
-    // Redirect ke halaman index.php setelah data berhasil disimpan
-    header("Location: index.php");
-    exit();
-} else {
-    echo "Error: " . $sql . "<br>" . $conn->error;
-}
-
-$conn->close();
 ?>
